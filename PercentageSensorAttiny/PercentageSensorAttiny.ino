@@ -5,7 +5,6 @@ const int analogSensorPin = A2;
 const int sensorRepeats = 10;
 const int numOf18650Cells = 1;
 
-
 const bool attinyInputVoltageIsKnown = true;
 const float attinyInputVoltage = 5.0;
 ////////// Change these as needed //////////
