@@ -4,6 +4,9 @@
 const int analogSensorPin = A2;
 const int sensorRepeats = 10;
 const int numOf18650Cells = 1;
+
+const bool attinyInputVoltageIsKnown = true;
+const float attinyInputVoltage = 5.0;
 ////////// Change these as needed //////////
 
 void setup()
@@ -29,11 +32,15 @@ void loop()
 
 float readVoltage() {
   float totalAvgVoltage = 0.00;
+  float inputVoltage = attinyInputVoltage;
+  if (!attinyInputVoltageIsKnown) {
+    inputVoltage = readInputVoltage();
+  }
 
   // Add up Voltage over Repeats
   for (int i = 0; i < sensorRepeats; i++){
     int sensorValue = analogRead(A2);
-    totalAvgVoltage += sensorValue * (5.0 / 1024.0);
+    totalAvgVoltage += sensorValue * (inputVoltage / 1024.0);
   }
 
   // Get Average Voltage
@@ -67,4 +74,38 @@ float calculatePercentage(float voltage) {
 
   // If below Min Voltage of 18650
   return 0.0f;
+}
+
+float readInputVoltage() {
+  // Read 1.1V reference against AVcc
+  // set the reference to Vcc and the measurement to the internal 1.1V reference
+  #if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    ADMUX = _BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  #elif defined (__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__)
+    ADMUX = _BV(MUX5) | _BV(MUX0);
+  #elif defined (__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+    ADMUX = _BV(MUX3) | _BV(MUX2);
+  #else
+    ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+  #endif  
+  
+  // Wait for Vref to settle
+  delay(2);
+  // Start conversion  
+  ADCSRA |= _BV(ADSC);
+  // measuring
+  while (bit_is_set(ADCSRA,ADSC));
+  
+  // must read ADCL first - it then locks ADCH 
+  uint8_t low  = ADCL;  
+  // unlocks both
+  uint8_t high = ADCH; 
+
+  long result = (high<<8) | low;
+  
+  // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
+  result = 1125300L / result;
+  
+  // Vcc in millivolts
+  return (String(result).substring(0, 3).toFloat() / 100.00);
 }
