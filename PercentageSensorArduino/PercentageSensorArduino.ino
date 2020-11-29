@@ -4,6 +4,8 @@
 const int analogSensorPin = A2;
 const int sensorRepeats = 10;
 const int numOf18650Cells = 1;
+const float resistanceOfResistorMeasuredAcross = 7.510;
+const float resistanceOfSecondResistor = 98.50;
 ////////// Change these as needed //////////
 
 void setup()
@@ -14,10 +16,13 @@ void setup()
 void loop()
 {
   // Read Voltage
-  float totalVoltage = readVoltage();
+  float rawVoltage = readVoltage();
+
+  // Calculate Real Voltage
+  float realVoltage = sensorConversion(rawVoltage);
 
   // Get Voltage of Singular 18650 Cell
-  float singleCellVoltage = totalVoltageoltage / numOf18650Cells
+  float singleCellVoltage = realVoltage / numOf18650Cells
 
   // Calculate Battery Percentage
   float percentage = calculatePercentage();
@@ -40,6 +45,10 @@ float readVoltage() {
   avgVoltage = totalAvgVoltage / sensorRepeats;
   
   return avgVoltage;
+}
+
+float sensorConversion(float rawValue) {
+  return ((rawValue / (resistanceOfResistorMeasuredAcross / (resistanceOfResistorMeasuredAcross + resistanceOfSecondResistor))));
 }
 
 float calculatePercentage(float voltage) {
